@@ -1,15 +1,16 @@
 package service
 
 import (
+	"encoding/json"
 	"log"
 	"outbox-job/db"
 	"time"
 )
 
-func ProcessPizzaOrders() {
+func ProcessPizzaCreatedOrders() {
 	for {
 		var events []PizzaOrderOutbox
-		err := db.DB.Where("status = ?", Pending).Find(&events).Limit(5).Error
+		err := db.DB.Where("status = ? AND event_type = ?", Pending, PizzaOrderCreated).Find(&events).Limit(5).Error
 		if err != nil {
 			log.Println("Error fetching pizza orders:", err)
 			continue
@@ -23,10 +24,21 @@ func ProcessPizzaOrders() {
 
 		for _, event := range events {
 			log.Println("Processing pizza order:", event.PizzaOrderID)
-			pizzaOrder, err := getPizzaOrder(event.PizzaOrderID)
-			if err != nil {
-				log.Println("Error fetching pizza order:", err)
-				continue
+
+			var pizzaOrder PizzaOrder
+
+			if event.Payload == "" {
+				pizzaOrder, err = getPizzaOrder(event.PizzaOrderID)
+				if err != nil {
+					log.Println("Error fetching pizza order:", err)
+					continue
+				}
+			} else {
+				err = json.Unmarshal([]byte(event.Payload), &pizzaOrder)
+				if err != nil {
+					log.Println("Error unmarshalling pizza order:", err)
+					continue
+				}
 			}
 
 			getPayment(pizzaOrder)

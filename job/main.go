@@ -10,5 +10,5 @@ func main() {
 	db.Connect()
 	log.Println("Pizza Orders job is running!")
 
-	service.ProcessPizzaOrders()
+	service.ProcessPizzaCreatedOrders()
 }

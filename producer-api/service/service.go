@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"outbox/db"
@@ -36,9 +37,16 @@ func CreatePizza(c *gin.Context) {
 }
 
 func WriteToOutbox(tx *gorm.DB, pizzaOrder PizzaOrder) error {
+	payload, err := json.Marshal(pizzaOrder)
+	if err != nil {
+		return err
+	}
+
 	outboxEntry := PizzaOrderOutbox{
 		PizzaOrderID: pizzaOrder.ID,
 		Status:       Pending,
+		EventType:    PizzaOrderCreated,
+		Payload:      string(payload),
 	}
 
 	return tx.Create(&outboxEntry).Error

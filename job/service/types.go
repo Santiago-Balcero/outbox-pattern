@@ -10,6 +10,12 @@ const (
 	Failed    Status = "failed"
 )
 
+type EventType string
+
+const (
+	PizzaOrderCreated EventType = "PizzaOrderCreated"
+)
+
 type PizzaOrder struct {
 	gorm.Model
 	Flavor   string  `json:"flavor"`
@@ -22,7 +28,9 @@ type PizzaOrder struct {
 
 type PizzaOrderOutbox struct {
 	gorm.Model
-	PizzaOrderID uint   `json:"pizza_order_id"`
-	Status       Status `json:"status"`
-	Error        string `json:"error"`
+	EventType    EventType `json:"event_type"`
+	PizzaOrderID uint      `json:"pizza_order_id"`
+	Payload      string    `json:"payload"`
+	Status       Status    `json:"status"`
+	Error        string    `json:"error"`
 }
