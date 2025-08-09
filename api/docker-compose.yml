@@ -1,0 +1,13 @@
+version: "3"
+name: outbox-pattern
+services:
+  postgres:
+    image: postgres:latest
+    container_name: outbox-db
+    restart: always
+    environment:
+      POSTGRES_DB: outbox_db
+      POSTGRES_USER: outbox_user
+      POSTGRES_PASSWORD: outbox_pass
+    ports:
+      - "5432:5432"
