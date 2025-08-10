@@ -28,9 +28,9 @@ type PizzaOrder struct {
 
 type PizzaOrderOutbox struct {
 	gorm.Model
-	EventType    EventType `json:"event_type"`
+	EventType    EventType `json:"event_type" gorm:"index"`
 	PizzaOrderID uint      `json:"pizza_order_id"`
 	Payload      string    `json:"payload"`
-	Status       Status    `json:"status"`
+	Status       Status    `json:"status" gorm:"index"`
 	Error        string    `json:"error"`
 }

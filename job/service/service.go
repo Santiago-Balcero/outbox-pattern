@@ -15,8 +15,8 @@ func ProcessPizzaCreatedOrders() {
 		err := db.DB.
 			Where("status = ? AND event_type = ?", Pending, PizzaOrderCreated).
 			Order("created_at ASC").
-			Find(&events).
 			Limit(10).
+			Find(&events).
 			Error
 		if err != nil {
 			log.Println("Error fetching pizza orders:", err)
