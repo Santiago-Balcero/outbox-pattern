@@ -12,7 +12,12 @@ import (
 func ProcessPizzaCreatedOrders() {
 	for {
 		var events []PizzaOrderOutbox
-		err := db.DB.Where("status = ? AND event_type = ?", Pending, PizzaOrderCreated).Find(&events).Limit(5).Error
+		err := db.DB.
+			Where("status = ? AND event_type = ?", Pending, PizzaOrderCreated).
+			Order("created_at ASC").
+			Find(&events).
+			Limit(10).
+			Error
 		if err != nil {
 			log.Println("Error fetching pizza orders:", err)
 			continue
