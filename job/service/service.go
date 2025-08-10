@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"outbox-job/db"
+	"outbox-job/redis"
 	"time"
 )
 
@@ -26,23 +28,21 @@ func ProcessPizzaCreatedOrders() {
 			log.Println("Processing pizza order:", event.PizzaOrderID)
 
 			var pizzaOrder PizzaOrder
-
-			if event.Payload == "" {
-				pizzaOrder, err = getPizzaOrder(event.PizzaOrderID)
-				if err != nil {
-					log.Println("Error fetching pizza order:", err)
-					continue
-				}
-			} else {
-				err = json.Unmarshal([]byte(event.Payload), &pizzaOrder)
-				if err != nil {
-					log.Println("Error unmarshalling pizza order:", err)
-					continue
-				}
+			err = json.Unmarshal([]byte(event.Payload), &pizzaOrder)
+			if err != nil {
+				log.Println("Error unmarshalling pizza order:", err)
+				continue
 			}
 
-			getPayment(pizzaOrder)
-			deliver(pizzaOrder)
+			if err := redis.Client.Ping(context.Background()).Err(); err != nil {
+				log.Println("Error pinging Redis:", err)
+				break
+			}
+
+			if err := redis.Client.Publish(context.Background(), "pizza-orders", event.Payload).Err(); err != nil {
+				log.Println("Error publishing pizza order to Redis:", err)
+				break
+			}
 
 			err = db.DB.Model(&PizzaOrderOutbox{}).Where("pizza_order_id = ?", pizzaOrder.ID).Update("status", Completed).Error
 			if err != nil {
@@ -53,18 +53,4 @@ func ProcessPizzaCreatedOrders() {
 			log.Println("Pizza order processed! 🍕")
 		}
 	}
-}
-
-func getPizzaOrder(id uint) (PizzaOrder, error) {
-	var pizzaOrder PizzaOrder
-	err := db.DB.Where("id = ?", id).First(&pizzaOrder).Error
-	return pizzaOrder, err
-}
-
-func getPayment(pizzaOrder PizzaOrder) {
-	log.Println("Payment processing $:", pizzaOrder.Price)
-}
-
-func deliver(pizzaOrder PizzaOrder) {
-	log.Println("Delivering pizza to:", pizzaOrder.UserName, "-", pizzaOrder.Address)
 }

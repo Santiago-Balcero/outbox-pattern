@@ -11,3 +11,10 @@ services:
       POSTGRES_PASSWORD: outbox_pass
     ports:
       - "5432:5432"
+
+  redis:
+    image: redis:latest
+    container_name: outbox-redis
+    restart: always
+    ports:
+      - "6379:6379"
