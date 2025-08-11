@@ -1,18 +1,31 @@
 package service
 
 import (
-	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"outbox-job/db"
-	"outbox-job/redis"
 	"time"
+
+	"gorm.io/gorm"
 )
 
-func ProcessPizzaCreatedOrders() {
+type Service struct {
+	Messenger Messenger
+	DB        *gorm.DB
+}
+
+func NewService(messenger Messenger, db *gorm.DB) *Service {
+	return &Service{
+		Messenger: messenger,
+		DB:        db,
+	}
+}
+
+func (s *Service) ProcessPizzaCreatedOrders() {
 	for {
 		var events []PizzaOrderOutbox
-		err := db.DB.
+		err := s.DB.
 			Where("status = ? AND event_type = ?", Pending, PizzaOrderCreated).
 			Order("created_at ASC").
 			Limit(10).
@@ -39,13 +52,13 @@ func ProcessPizzaCreatedOrders() {
 				continue
 			}
 
-			if err := redis.Client.Ping(context.Background()).Err(); err != nil {
-				log.Println("Error pinging Redis:", err)
+			if err := s.Messenger.Ping(); err != nil {
+				log.Println(fmt.Sprintf("Error pinging %s:", s.Messenger.GetName()), err)
 				break
 			}
 
-			if err := redis.Client.Publish(context.Background(), "pizza-orders", event.Payload).Err(); err != nil {
-				log.Println("Error publishing pizza order to Redis:", err)
+			if err := s.Messenger.SendMessage("pizza-orders", event.Payload); err != nil {
+				log.Println(fmt.Sprintf("Error publishing pizza order to %s:", s.Messenger.GetName()), err)
 				break
 			}
 
